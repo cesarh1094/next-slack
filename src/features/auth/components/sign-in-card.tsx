@@ -15,6 +15,7 @@ import { SignInFlow } from "../types";
 import { z } from "zod";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
+import { cn } from "@/lib/utils";
 
 const SignInFormSchema = z.object({
   email: z
@@ -49,11 +50,10 @@ export function SignInCard({ setState }: SignInCardProps) {
         <form className="space-y-3" {...getFormProps(form)}>
           <div className="grid gap-1">
             <Input
-              disabled={false}
               placeholder="Email"
-              required
-              onChange={() => {}}
-              className="invalid:border-red-800"
+              className={cn(
+                fields.email.errors ? "invalid:border-red-800" : "",
+              )}
               {...getInputProps(fields.email, { type: "email" })}
             />
             {fields.email.errors ? (
@@ -66,9 +66,9 @@ export function SignInCard({ setState }: SignInCardProps) {
             <Input
               disabled={false}
               placeholder="Password"
-              required
-              onChange={() => {}}
-              className="invalid:border-red-800"
+              className={cn(
+                fields.password.errors ? "invalid:border-red-800" : "",
+              )}
               {...getInputProps(fields.password, { type: "password" })}
             />
             {fields.password.errors ? (
@@ -95,12 +95,7 @@ export function SignInCard({ setState }: SignInCardProps) {
             <FcGoogle className="size-5 absolute left-2.5 top-2.5" />
             Continue with Google
           </Button>
-          <Button
-            disabled={false}
-            variant="outline"
-            size="lg"
-            className="w-full relative"
-          >
+          <Button variant="outline" size="lg" className="w-full relative">
             <FaGithub className="size-5 absolute left-2.5 top-2.5" />
             Continue with Github
           </Button>
