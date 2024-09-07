@@ -12,12 +12,31 @@ import { Dispatch, SetStateAction } from "react";
 import { FaGithub } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { SignInFlow } from "../types";
+import { z } from "zod";
+import { getFormProps, getInputProps, useForm } from "@conform-to/react";
+import { getZodConstraint, parseWithZod } from "@conform-to/zod";
+
+const SignInFormSchema = z.object({
+  email: z
+    .string({ required_error: "Email is required" })
+    .email("Email is invalid"),
+  password: z
+    .string({ required_error: "Password is required" })
+    .min(20, "Password should be at least 20 characters"),
+});
 
 type SignInCardProps = {
   setState: Dispatch<SetStateAction<SignInFlow>>;
 };
 
 export function SignInCard({ setState }: SignInCardProps) {
+  const [form, fields] = useForm({
+    onValidate({ formData }) {
+      return parseWithZod(formData, { schema: SignInFormSchema });
+    },
+    constraint: getZodConstraint(SignInFormSchema),
+  });
+
   return (
     <Card className="w-full h-full p-8">
       <CardHeader className="px-0 pt-0">
@@ -27,23 +46,40 @@ export function SignInCard({ setState }: SignInCardProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5 px-0 pb-0">
-        <form className="space-y-2.5">
-          <Input
-            disabled={false}
-            placeholder="Email"
-            type="email"
-            required
-            value={""}
-            onChange={() => {}}
-          />
-          <Input
-            disabled={false}
-            placeholder="Password"
-            type="password"
-            required
-            value={""}
-            onChange={() => {}}
-          />
+        <form className="space-y-3" {...getFormProps(form)}>
+          <div className="grid gap-1">
+            <Input
+              disabled={false}
+              placeholder="Email"
+              required
+              onChange={() => {}}
+              className="invalid:border-red-800"
+              {...getInputProps(fields.email, { type: "email" })}
+            />
+            {fields.email.errors ? (
+              <div className="text-red-800 text-sm" id={fields.email.errorId}>
+                {fields.email.errors}
+              </div>
+            ) : null}
+          </div>
+          <div className="grid gap-1">
+            <Input
+              disabled={false}
+              placeholder="Password"
+              required
+              onChange={() => {}}
+              className="invalid:border-red-800"
+              {...getInputProps(fields.password, { type: "password" })}
+            />
+            {fields.password.errors ? (
+              <div
+                className="text-red-800 text-sm"
+                id={fields.password.errorId}
+              >
+                {fields.password.errors}
+              </div>
+            ) : null}
+          </div>
           <Button type="submit" className="w-full" size="lg" disabled={false}>
             Continue
           </Button>
