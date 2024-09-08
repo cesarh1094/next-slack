@@ -16,6 +16,9 @@ import { z } from "zod";
 import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod";
 import { cn } from "@/lib/utils";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { useFormState, useFormStatus } from "react-dom";
+import { TriangleAlert, LoaderCircleIcon } from "lucide-react";
 
 const SignInFormSchema = z.object({
   email: z
@@ -30,13 +33,59 @@ type SignInCardProps = {
   setState: Dispatch<SetStateAction<SignInFlow>>;
 };
 
+function SubmitButton() {
+  const status = useFormStatus();
+
+  return (
+    <Button
+      type="submit"
+      className="w-full relative"
+      size="lg"
+      disabled={status.pending}
+    >
+      Continue
+      {status.pending ? (
+        <LoaderCircleIcon className="size-4 absolute right-2.5 top-2.5 animate-spin" />
+      ) : null}
+    </Button>
+  );
+}
+
 export function SignInCard({ setState }: SignInCardProps) {
+  const { signIn } = useAuthActions();
+
+  const [lastResult, action] = useFormState(
+    async (_: unknown, formData: FormData) => {
+      const submission = parseWithZod(formData, { schema: SignInFormSchema });
+
+      if (submission.status !== "success") {
+        return submission.reply();
+      }
+
+      try {
+        await signIn("password", {
+          email: submission.value.email,
+          password: submission.value.password,
+          flow: "signIn",
+        });
+      } catch (e) {
+        return submission.reply({ formErrors: ["Invalid email or password"] });
+      }
+    },
+    undefined,
+  );
+
   const [form, fields] = useForm({
+    lastResult,
     onValidate({ formData }) {
       return parseWithZod(formData, { schema: SignInFormSchema });
     },
     constraint: getZodConstraint(SignInFormSchema),
   });
+
+  function handleAuthProviderSignIn(provider: "github" | "google") {
+    signIn(provider);
+  }
 
   return (
     <Card className="w-full h-full p-8">
@@ -47,7 +96,15 @@ export function SignInCard({ setState }: SignInCardProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5 px-0 pb-0">
-        <form className="space-y-3" {...getFormProps(form)}>
+        <form className="space-y-3" action={action} {...getFormProps(form)}>
+          {form.errors ? (
+            <div className="p-3 bg-red-100 text-red-800 rounded-md flex items-center gap-x-2 text-sm">
+              <TriangleAlert className="size-4" />
+              {form.errors}
+            </div>
+          ) : (
+            ""
+          )}
           <div className="grid gap-1">
             <Input
               placeholder="Email"
@@ -80,9 +137,7 @@ export function SignInCard({ setState }: SignInCardProps) {
               </div>
             ) : null}
           </div>
-          <Button type="submit" className="w-full" size="lg" disabled={false}>
-            Continue
-          </Button>
+          <SubmitButton />
         </form>
         <Separator />
         <div className="flex flex-col gap-y-2.5">
@@ -91,11 +146,17 @@ export function SignInCard({ setState }: SignInCardProps) {
             variant="outline"
             size="lg"
             className="w-full relative"
+            onClick={() => handleAuthProviderSignIn("google")}
           >
             <FcGoogle className="size-5 absolute left-2.5 top-2.5" />
             Continue with Google
           </Button>
-          <Button variant="outline" size="lg" className="w-full relative">
+          <Button
+            variant="outline"
+            size="lg"
+            className="w-full relative"
+            onClick={() => handleAuthProviderSignIn("github")}
+          >
             <FaGithub className="size-5 absolute left-2.5 top-2.5" />
             Continue with Github
           </Button>

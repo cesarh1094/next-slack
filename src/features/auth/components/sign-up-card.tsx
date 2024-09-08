@@ -16,10 +16,31 @@ import { getFormProps, getInputProps, useForm } from "@conform-to/react";
 import { parseWithZod, getZodConstraint } from "@conform-to/zod";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
+import { LoaderCircleIcon } from "lucide-react";
+import { useFormState, useFormStatus } from "react-dom";
+import { useAuthActions } from "@convex-dev/auth/react";
 
 type SignUpCardProps = {
   setState: Dispatch<SetStateAction<SignInFlow>>;
 };
+
+function SubmitButton() {
+  const status = useFormStatus();
+
+  return (
+    <Button
+      type="submit"
+      className="w-full relative"
+      size="lg"
+      disabled={status.pending}
+    >
+      Continue
+      {status.pending ? (
+        <LoaderCircleIcon className="size-4 absolute right-2.5 top-2.5 animate-spin" />
+      ) : null}
+    </Button>
+  );
+}
 
 const SignUpFormSchema = z
   .object({
@@ -38,12 +59,40 @@ const SignUpFormSchema = z
   });
 
 export function SignUpCard({ setState }: SignUpCardProps) {
+  const { signIn } = useAuthActions();
+
+  const [lastResult, action] = useFormState(
+    async (_: unknown, formData: FormData) => {
+      const submission = parseWithZod(formData, { schema: SignUpFormSchema });
+
+      if (submission.status !== "success") {
+        return submission.reply();
+      }
+
+      try {
+        await signIn("password", {
+          email: submission.value.email,
+          password: submission.value.password,
+          flow: "signUp",
+        });
+      } catch (e) {
+        return submission.reply({ formErrors: ["Invalid email or password"] });
+      }
+    },
+    undefined,
+  );
+
   const [form, fields] = useForm({
+    lastResult,
     onValidate({ formData }) {
       return parseWithZod(formData, { schema: SignUpFormSchema });
     },
     constraint: getZodConstraint(SignUpFormSchema),
   });
+
+  function handleAuthProviderSignIn(provider: "github" | "google") {
+    signIn(provider);
+  }
 
   return (
     <Card className="w-full h-full p-8">
@@ -54,7 +103,7 @@ export function SignUpCard({ setState }: SignUpCardProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5 px-0 pb-0">
-        <form className="space-y-3" {...getFormProps(form)}>
+        <form className="space-y-3" action={action} {...getFormProps(form)}>
           <div className="grid gap-1">
             <Input
               disabled={false}
@@ -106,9 +155,7 @@ export function SignUpCard({ setState }: SignUpCardProps) {
               </div>
             ) : null}
           </div>
-          <Button type="submit" className="w-full" size="lg" disabled={false}>
-            Continue
-          </Button>
+          <SubmitButton />
         </form>
         <Separator />
         <div className="flex flex-col gap-y-2.5">
@@ -117,6 +164,7 @@ export function SignUpCard({ setState }: SignUpCardProps) {
             variant="outline"
             size="lg"
             className="w-full relative"
+            onClick={() => handleAuthProviderSignIn("google")}
           >
             <FcGoogle className="size-5 absolute left-2.5 top-2.5" />
             Continue with Google
@@ -126,6 +174,7 @@ export function SignUpCard({ setState }: SignUpCardProps) {
             variant="outline"
             size="lg"
             className="w-full relative"
+            onClick={() => handleAuthProviderSignIn("github")}
           >
             <FaGithub className="size-5 absolute left-2.5 top-2.5" />
             Continue with Github
