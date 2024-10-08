@@ -47,6 +47,7 @@ const SignUpFormSchema = z
     email: z
       .string({ required_error: "Email is required" })
       .email("Email is invalid"),
+    name: z.string({ required_error: "Name is required" }).min(1),
     password: z.string({ required_error: "Password is required" }).min(20),
     confirmPassword: z.string({
       required_error: "Please confirm password",
@@ -70,8 +71,9 @@ export function SignUpCard({ setState }: SignUpCardProps) {
       }
 
       try {
-        await signIn("password", {
+        void signIn("password", {
           email: submission.value.email,
+          name: submission.value.name,
           password: submission.value.password,
           flow: "signUp",
         });
@@ -79,7 +81,7 @@ export function SignUpCard({ setState }: SignUpCardProps) {
         return submission.reply({ formErrors: ["Invalid email or password"] });
       }
     },
-    undefined,
+    undefined
   );
 
   const [form, fields] = useForm({
@@ -107,9 +109,22 @@ export function SignUpCard({ setState }: SignUpCardProps) {
           <div className="grid gap-1">
             <Input
               disabled={false}
+              placeholder="Full name"
+              className={cn(fields.name.errors ? "invalid:border-red-800" : "")}
+              {...getInputProps(fields.name, { type: "text" })}
+            />
+            {fields.name.errors ? (
+              <div className="text-red-800 text-sm" id={fields.name.errorId}>
+                {fields.name.errors}
+              </div>
+            ) : null}
+          </div>
+          <div className="grid gap-1">
+            <Input
+              disabled={false}
               placeholder="Email"
               className={cn(
-                fields.email.errors ? "invalid:border-red-800" : "",
+                fields.email.errors ? "invalid:border-red-800" : ""
               )}
               {...getInputProps(fields.email, { type: "email" })}
             />
@@ -124,7 +139,7 @@ export function SignUpCard({ setState }: SignUpCardProps) {
               disabled={false}
               placeholder="Password"
               className={cn(
-                fields.password.errors ? "invalid:border-red-800" : "",
+                fields.password.errors ? "invalid:border-red-800" : ""
               )}
               {...getInputProps(fields.password, { type: "password" })}
             />
@@ -142,7 +157,7 @@ export function SignUpCard({ setState }: SignUpCardProps) {
               disabled={false}
               placeholder="Confirm password"
               className={cn(
-                fields.confirmPassword.errors ? "invalid:border-red-800" : "",
+                fields.confirmPassword.errors ? "invalid:border-red-800" : ""
               )}
               {...getInputProps(fields.confirmPassword, { type: "password" })}
             />
