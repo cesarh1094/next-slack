@@ -1,9 +1,9 @@
-export default function WorkspacePage({ params }: { params: { id: string } }) {
-  console.log(params);
+import { WorkspacePage } from "./components/workspace-page";
 
+export default function Page({ params }: { params: { id: string } }) {
   return (
-    <div>
-      My first workspace: <span>{params.id}</span>
-    </div>
+    <>
+      <WorkspacePage id={params.id} />
+    </>
   );
 }
