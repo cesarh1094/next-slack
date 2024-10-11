@@ -11,6 +11,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Custom Slack colors
+        slackPurple: "#481349",
+        slackGray: "#ababad",
+        slackOffWhite: "#f2f2f2",
+        slackDarkGray: "#616061",
+
+        //// Default from shadcn install
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
